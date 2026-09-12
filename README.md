@@ -1,5 +1,5 @@
 # Work Balance
 
-Phone check-in / flex tracker. Open the GitHub Pages site, then in Chrome use Add to Home screen.
+Phone check-in / flex tracker: https://rambarada.github.io/work-balance/
 
-Data stays in your browser, not on GitHub.
+Open that link in Chrome, then **Add to Home screen**. Data stays in your browser, not on GitHub.
