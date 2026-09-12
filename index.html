@@ -118,6 +118,7 @@
 
   <script>
     var KEY = 'wb';
+    var NOTIFY_AFTER_MINUTES = 1;
 
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
     function dateKey(d) {
@@ -160,8 +161,29 @@
     state.lastDay = state.lastDay || '';
     state.lastWorked = state.lastWorked || 0;
     state.lastToday = state.lastToday || 0;
+    state.notified = !!state.notified;
 
     function $(id) { return document.getElementById(id); }
+
+    function askNotify() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function pingDone() {
+      if (state.notified) return;
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      state.notified = true;
+      save(state);
+      try {
+        new Notification('Work Balance', {
+          body: 'Test: 1 minute passed. This will later be your 9 hour mark.',
+          tag: 'wb-done'
+        });
+      } catch (e) {}
+    }
 
     function render() {
       var now = new Date();
@@ -188,13 +210,16 @@
         $('inText').textContent = hm(start);
         $('workedText').textContent = fmtAbs(worked);
         $('outText').textContent = hm(new Date(state.inMs + need * 60000));
+        if (worked >= NOTIFY_AFTER_MINUTES) pingDone();
       }
     }
 
     $('checkIn').onclick = function () {
       if (state.inMs > 0) return;
       state.inMs = Date.now();
+      state.notified = false;
       save(state);
+      askNotify();
       render();
     };
     $('checkOut').onclick = function () {
@@ -207,17 +232,19 @@
       state.lastWorked = worked;
       state.lastToday = todayBal;
       state.inMs = 0;
+      state.notified = false;
       save(state);
       render();
     };
     $('reset').onclick = function () {
       if (!confirm('Clear all Work Balance data?')) return;
-      state = { inMs: 0, balMins: 0, lastDay: '', lastWorked: 0, lastToday: 0 };
+      state = { inMs: 0, balMins: 0, lastDay: '', lastWorked: 0, lastToday: 0, notified: false };
       save(state);
       render();
     };
 
     render();
+    if (state.inMs > 0) askNotify();
     setInterval(render, 1000);
   </script>
 </body>
