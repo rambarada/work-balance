@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0b1220">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Work Balance</title>
@@ -13,44 +13,75 @@
     html, body {
       margin: 0;
       min-height: 100%;
-      background: #111;
-      color: #fff;
+      background: #0b1220;
+      color: #e8eef8;
       font-family: system-ui, sans-serif;
     }
     .page {
       min-height: 100dvh;
       max-width: 420px;
       margin: 0 auto;
-      padding: 28px 20px 24px;
+      padding: 24px 18px 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 12px;
     }
-    .title { color: #888; font-size: 15px; margin: 0 0 20px; }
-    .body { width: 100%; display: flex; flex-direction: column; align-items: center; }
-    .label { color: #888; font-size: 16px; margin: 0; }
-    .balance { font-size: 48px; margin: 8px 0 28px; font-weight: 600; }
-    .row, .result { width: 100%; text-align: center; margin: 8px 0; font-size: 20px; color: #ddd; }
-    .result { font-size: 22px; color: #fff; }
-    .btn {
-      width: min(100%, 300px);
-      height: 72px;
-      margin-top: 24px;
-      border: 0;
-      border-radius: 36px;
-      font-size: 22px;
+    .title { margin: 0; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: #7f91ad; }
+    .badge {
+      margin: 0;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
       font-weight: 700;
+    }
+    .ready { background: #14331f; color: #4ade80; }
+    .live { background: #3f1510; color: #fb7185; }
+    .body { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .label { margin: 0; color: #7f91ad; font-size: 14px; }
+    .balance { margin: 0 0 8px; font-size: 52px; font-weight: 800; letter-spacing: -0.03em; }
+    .card {
+      width: 100%;
+      background: #151d2e;
+      border: 1px solid #243049;
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 18px;
+    }
+    .row + .row { border-top: 1px solid #243049; }
+    .k { color: #7f91ad; font-size: 14px; }
+    .v { font-weight: 700; }
+    .hint { margin: 4px 0 0; text-align: center; color: #7f91ad; font-size: 13px; }
+    .btn {
+      width: min(100%, 320px);
+      height: 68px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 18px;
+      font-size: 22px;
+      font-weight: 800;
       color: #fff;
     }
-    .in { background: #1f8a4c; }
-    .out { background: #c44b2b; }
+    .in { background: #16a34a; }
+    .out { background: #dc2626; }
+    .pos { color: #4ade80; }
+    .neg { color: #fb7185; }
+    .zero { color: #e8eef8; }
+    .amber { color: #fbbf24; }
     .reset {
-      margin-top: 36px;
+      margin-top: 8px;
       background: none;
       border: 0;
-      color: #555;
-      font-size: 14px;
+      color: #4b5d78;
+      font-size: 13px;
     }
     .hidden { display: none; }
   </style>
@@ -58,28 +89,31 @@
 <body>
   <div class="page">
     <p class="title">Work Balance</p>
+    <p id="badge" class="badge ready">Ready to check in</p>
 
     <div id="idle" class="body">
-      <p class="label">Flex</p>
-      <p id="idleBal" class="balance">0m</p>
+      <p class="label">Total flex</p>
+      <p id="idleBal" class="balance zero">0m</p>
+      <div id="lastCard" class="card hidden">
+        <div class="row"><span class="k">Last worked</span><span id="lastWorked" class="v amber"></span></div>
+        <div class="row"><span class="k">Last day</span><span id="lastToday" class="v"></span></div>
+      </div>
+      <p class="hint">Green button starts the day. After checkout you can check in again here.</p>
       <button class="btn in" type="button" id="checkIn">CHECK IN</button>
     </div>
 
     <div id="inSession" class="body hidden">
-      <p class="row">In <span id="inText"></span></p>
-      <p class="row">Worked <span id="workedText"></span></p>
-      <p class="row">Out <span id="outText"></span></p>
-      <p class="row">Flex <span id="inBal"></span></p>
+      <div class="card">
+        <div class="row"><span class="k">Checked in</span><span id="inText" class="v pos"></span></div>
+        <div class="row"><span class="k">Worked so far</span><span id="workedText" class="v amber"></span></div>
+        <div class="row"><span class="k">Normal checkout</span><span id="outText" class="v"></span></div>
+        <div class="row"><span class="k">Total flex</span><span id="inBal" class="v"></span></div>
+      </div>
+      <p class="hint">Red button ends the day and updates flex.</p>
       <button class="btn out" type="button" id="checkOut">CHECK OUT</button>
     </div>
 
-    <div id="result" class="body hidden">
-      <p id="workedLine" class="result"></p>
-      <p id="todayLine" class="result"></p>
-      <p id="balanceLine" class="result"></p>
-    </div>
-
-    <button class="reset" type="button" id="reset">Reset</button>
+    <button class="reset" type="button" id="reset">Reset data</button>
   </div>
 
   <script>
@@ -103,6 +137,11 @@
       if (n < 0) return '-' + fmtAbs(n);
       return '0m';
     }
+    function tone(el, mins) {
+      el.classList.remove('pos', 'neg', 'zero');
+      var n = Math.round(mins);
+      el.classList.add(n > 0 ? 'pos' : n < 0 ? 'neg' : 'zero');
+    }
 
     function load() {
       try {
@@ -121,20 +160,27 @@
     state.lastDay = state.lastDay || '';
     state.lastWorked = state.lastWorked || 0;
     state.lastToday = state.lastToday || 0;
-    var timer = null;
 
     function $(id) { return document.getElementById(id); }
 
     function render() {
       var now = new Date();
-      var today = dateKey(now);
       var checkedIn = state.inMs > 0;
-      var dayDone = !checkedIn && state.lastDay === today;
-      $('idle').classList.toggle('hidden', !(!checkedIn && !dayDone));
+      $('idle').classList.toggle('hidden', checkedIn);
       $('inSession').classList.toggle('hidden', !checkedIn);
-      $('result').classList.toggle('hidden', !dayDone);
+      $('badge').textContent = checkedIn ? 'Checked in' : 'Ready to check in';
+      $('badge').className = 'badge ' + (checkedIn ? 'live' : 'ready');
       $('idleBal').textContent = fmtDelta(state.balMins);
+      tone($('idleBal'), state.balMins);
       $('inBal').textContent = fmtDelta(state.balMins);
+      tone($('inBal'), state.balMins);
+      var hasLast = !checkedIn && state.lastDay;
+      $('lastCard').classList.toggle('hidden', !hasLast);
+      if (hasLast) {
+        $('lastWorked').textContent = fmtAbs(state.lastWorked);
+        $('lastToday').textContent = fmtDelta(state.lastToday);
+        tone($('lastToday'), state.lastToday);
+      }
       if (checkedIn) {
         var start = new Date(state.inMs);
         var need = requiredMinutes(start);
@@ -143,15 +189,10 @@
         $('workedText').textContent = fmtAbs(worked);
         $('outText').textContent = hm(new Date(state.inMs + need * 60000));
       }
-      if (dayDone) {
-        $('workedLine').textContent = 'Worked: ' + fmtAbs(state.lastWorked);
-        $('todayLine').textContent = 'Today: ' + fmtDelta(state.lastToday);
-        $('balanceLine').textContent = 'Balance: ' + fmtDelta(state.balMins);
-      }
     }
 
     $('checkIn').onclick = function () {
-      if (state.inMs > 0 || state.lastDay === dateKey(new Date())) return;
+      if (state.inMs > 0) return;
       state.inMs = Date.now();
       save(state);
       render();
