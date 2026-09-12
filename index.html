@@ -84,11 +84,23 @@
       font-size: 13px;
     }
     .hidden { display: none; }
+    .toast {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      background: #16a34a;
+      color: #fff;
+      font-weight: 800;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
   <div class="page">
     <p class="title">Work Balance</p>
+    <p id="toast" class="toast hidden">1 minute done</p>
     <p id="badge" class="badge ready">Ready to check in</p>
 
     <div id="idle" class="body">
@@ -161,9 +173,13 @@
     state.lastDay = state.lastDay || '';
     state.lastWorked = state.lastWorked || 0;
     state.lastToday = state.lastToday || 0;
-    state.notified = !!state.notified;
+    state.notifyFor = state.notifyFor || 0;
 
     function $(id) { return document.getElementById(id); }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
 
     function askNotify() {
       if (!('Notification' in window)) return;
@@ -172,17 +188,33 @@
       }
     }
 
+    function showBanner() {
+      $('toast').textContent = '1 minute done — test notification';
+      $('toast').classList.remove('hidden');
+    }
+
     function pingDone() {
-      if (state.notified) return;
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      state.notified = true;
+      if (!state.inMs || state.notifyFor === state.inMs) return;
+      state.notifyFor = state.inMs;
       save(state);
-      try {
-        new Notification('Work Balance', {
-          body: 'Test: 1 minute passed. This will later be your 9 hour mark.',
-          tag: 'wb-done'
-        });
-      } catch (e) {}
+      showBanner();
+      var title = 'Work Balance';
+      var opts = {
+        body: 'Test: 1 minute passed. This will later be your 9 hour mark.',
+        tag: 'wb-done',
+        renotify: true
+      };
+      function fallback() {
+        try { new Notification(title, opts); } catch (e) {}
+      }
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.ready.then(function (reg) {
+          return reg.showNotification(title, opts);
+        }).catch(fallback);
+      } else {
+        fallback();
+      }
     }
 
     function render() {
@@ -206,18 +238,18 @@
       if (checkedIn) {
         var start = new Date(state.inMs);
         var need = requiredMinutes(start);
-        var worked = Math.floor((now.getTime() - state.inMs) / 60000);
+        var worked = Math.floor((now.getTime() - state.inMs) / 1000);
         $('inText').textContent = hm(start);
-        $('workedText').textContent = fmtAbs(worked);
+        $('workedText').textContent = fmtAbs(Math.floor(worked / 60));
         $('outText').textContent = hm(new Date(state.inMs + need * 60000));
-        if (worked >= NOTIFY_AFTER_MINUTES) pingDone();
+        if (worked >= NOTIFY_AFTER_MINUTES * 60) pingDone();
       }
     }
 
     $('checkIn').onclick = function () {
       if (state.inMs > 0) return;
       state.inMs = Date.now();
-      state.notified = false;
+      state.notifyFor = 0;
       save(state);
       askNotify();
       render();
@@ -232,17 +264,20 @@
       state.lastWorked = worked;
       state.lastToday = todayBal;
       state.inMs = 0;
-      state.notified = false;
+      state.notifyFor = 0;
       save(state);
       render();
     };
     $('reset').onclick = function () {
       if (!confirm('Clear all Work Balance data?')) return;
-      state = { inMs: 0, balMins: 0, lastDay: '', lastWorked: 0, lastToday: 0, notified: false };
+      state = { inMs: 0, balMins: 0, lastDay: '', lastWorked: 0, lastToday: 0, notifyFor: 0 };
       save(state);
       render();
     };
 
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') render();
+    });
     render();
     if (state.inMs > 0) askNotify();
     setInterval(render, 1000);
