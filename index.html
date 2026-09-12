@@ -100,7 +100,7 @@
 <body>
   <div class="page">
     <p class="title">Work Balance</p>
-    <p id="toast" class="toast hidden">1 minute done</p>
+    <p id="toast" class="toast hidden">Workday complete</p>
     <p id="badge" class="badge ready">Ready to check in</p>
 
     <div id="idle" class="body">
@@ -130,7 +130,6 @@
 
   <script>
     var KEY = 'wb';
-    var NOTIFY_AFTER_MINUTES = 1;
 
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
     function dateKey(d) {
@@ -142,6 +141,7 @@
       var n = Math.abs(Math.round(mins));
       var h = Math.floor(n / 60);
       var m = n % 60;
+      if (h > 0 && m === 0) return h + ' h';
       return h > 0 ? h + ' h ' + m + ' m' : m + ' m';
     }
     function fmtDelta(mins) {
@@ -188,19 +188,19 @@
       }
     }
 
-    function showBanner() {
-      $('toast').textContent = '1 minute done — test notification';
+    function showBanner(need) {
+      $('toast').textContent = 'Workday complete (' + fmtAbs(need) + ')';
       $('toast').classList.remove('hidden');
     }
 
-    function pingDone() {
+    function pingDone(need) {
       if (!state.inMs || state.notifyFor === state.inMs) return;
       state.notifyFor = state.inMs;
       save(state);
-      showBanner();
+      showBanner(need);
       var title = 'Work Balance';
       var opts = {
-        body: 'Test: 1 minute passed. This will later be your 9 hour mark.',
+        body: 'Normal checkout time: you have worked ' + fmtAbs(need) + '.',
         tag: 'wb-done',
         renotify: true
       };
@@ -242,7 +242,7 @@
         $('inText').textContent = hm(start);
         $('workedText').textContent = fmtAbs(Math.floor(worked / 60));
         $('outText').textContent = hm(new Date(state.inMs + need * 60000));
-        if (worked >= NOTIFY_AFTER_MINUTES * 60) pingDone();
+        if (worked >= need * 60) pingDone(need);
       }
     }
 
